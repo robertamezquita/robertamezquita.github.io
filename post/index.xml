@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on R.Amezquita</title>
+    <link>http://robertamezquita.github.io/post/index.xml</link>
+    <description>Recent content in Posts on R.Amezquita</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Tue, 04 Apr 2017 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://robertamezquita.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Test Post</title>
+      <link>http://robertamezquita.github.io/post/2017-04-04-test-post/</link>
+      <pubDate>Tue, 04 Apr 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://robertamezquita.github.io/post/2017-04-04-test-post/</guid>
+      <description>&lt;p&gt;Trying out a new post just to see how this system works. Already found that (featured) images don’t seem to be working on the home page, but do work on the /blog/ subdomain. Also I need to make sure to set the “type: ‘post’” in the YAML header. Anyways, let’s see how beautifully R code renders..&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## run in a chunk with `include = FALSE`
+## library(tidyverse) 
+
+## Run within this chunk with echo = TRUE
+hello_world &amp;lt;- frame_data(
+    ~first, ~second, ~third, ~fourth,
+    &amp;quot;its&amp;quot;, &amp;quot;a&amp;quot;, &amp;quot;beautiful&amp;quot;, &amp;quot;day&amp;quot;
+)
+
+hello_world&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 1 × 4
+##   first second     third fourth
+##   &amp;lt;chr&amp;gt;  &amp;lt;chr&amp;gt;     &amp;lt;chr&amp;gt;  &amp;lt;chr&amp;gt;
+## 1   its      a beautiful    day&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now what happens when I generate a plot?&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;frame_data(
+    ~one, ~two,
+    1, 2,
+    1, 2
+) %&amp;gt;%
+    ggplot(aes(x = one, y = two)) +
+    geom_point() +
+    theme_classic()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;http://robertamezquita.github.io/post/2017-04-04-test-post_files/figure-html/test2-1.png&#34; width=&#34;192&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Looking beautiful!! And yes, I am a &lt;code&gt;theme_classic()&lt;/code&gt; kind of person myself, though I also enjoy using the &lt;code&gt;cowplot&lt;/code&gt; package for really nice plot setting.&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -7,6 +7,11 @@
   </url>
   
   <url>
+    <loc>http://robertamezquita.github.io/post/2017-04-04-test-post/</loc>
+    <lastmod>2017-04-04T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
     <loc>http://robertamezquita.github.io/about/</loc>
     <lastmod>2017-04-03T00:00:00+00:00</lastmod>
   </url>
@@ -14,6 +19,12 @@
   <url>
     <loc>http://robertamezquita.github.io/blog/</loc>
     <lastmod>2017-04-04T14:15:32-04:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://robertamezquita.github.io/post/</loc>
+    <lastmod>2017-04-04T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
