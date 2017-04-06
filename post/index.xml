@@ -6,8 +6,88 @@
     <description>Recent content in Posts on R.Amezquita</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 04 Apr 2017 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 06 Apr 2017 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://robertamezquita.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Munging Contiguous Data to Wide Format</title>
+      <link>http://robertamezquita.github.io/post/2017-04-06-munging-contiguous-data-to-wide-format/</link>
+      <pubDate>Thu, 06 Apr 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://robertamezquita.github.io/post/2017-04-06-munging-contiguous-data-to-wide-format/</guid>
+      <description>&lt;!-- BLOGDOWN-HEAD --&gt;
+&lt;!-- /BLOGDOWN-HEAD --&gt;
+
+&lt;!-- BLOGDOWN-BODY-BEFORE --&gt;
+&lt;!-- /BLOGDOWN-BODY-BEFORE --&gt;
+&lt;p&gt;Here I just wanted to take a quick second to share a small code snippet that illustrates munging a contiguous dataset to a wide format.&lt;/p&gt;
+&lt;p&gt;What do I mean by that? Consider the following example: let’s say we have a dataset where we have patients A, B, and C, and we take two tissues from each patient - one of Serum and one of TIF (tumor interstitial fluid), and from each tissue assay a whole host of metabolites, each with its own column. If we want to take the log2 fold-change of Serum vs. TIF for each patient, its tricky to do in Excel when the data is spread out contiguously, across rows.&lt;/p&gt;
+&lt;p&gt;So how can we tackle this sort of problem in R? Making use of the &lt;code&gt;tidyverse&lt;/code&gt;, the key here is to first gather the metabolites, such that we have a new column named &lt;code&gt;metabolite&lt;/code&gt; describing what is being assayed, and a &lt;code&gt;value&lt;/code&gt; column with the readout.&lt;/p&gt;
+&lt;p&gt;Now, after this we still have our tissue (specimen type) being Serum vs. TIF. If we want to easily compare the two, it’s easier to &lt;code&gt;spread&lt;/code&gt; these values out across columns, such that we have one row per patient, with two columns, &lt;code&gt;Serum&lt;/code&gt; and &lt;code&gt;TIF&lt;/code&gt;, deriving their values from our freshly created &lt;code&gt;value&lt;/code&gt; column, with &lt;code&gt;metabolite&lt;/code&gt; still describing each assay.&lt;/p&gt;
+&lt;p&gt;In code, this is what the process looks like below.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(tidyverse)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## Create example data
+dat &amp;lt;- tribble(
+    ~Patient.ID, ~Tissue, ~Glucose, ~Pyruvate, ~Glutamate,
+    &amp;#39;CR1&amp;#39;,       &amp;#39;Serum&amp;#39;,        1,         2,          3,
+    &amp;#39;CR1&amp;#39;,         &amp;#39;TIF&amp;#39;,        4,         3,         10,
+    &amp;#39;CR2&amp;#39;,       &amp;#39;Serum&amp;#39;,       11,         2,          5,
+    &amp;#39;CR2&amp;#39;,         &amp;#39;TIF&amp;#39;,        5,         10,         4
+)
+dat&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 4 × 5
+##   Patient.ID Tissue Glucose Pyruvate Glutamate
+##        &amp;lt;chr&amp;gt;  &amp;lt;chr&amp;gt;   &amp;lt;dbl&amp;gt;    &amp;lt;dbl&amp;gt;     &amp;lt;dbl&amp;gt;
+## 1        CR1  Serum       1        2         3
+## 2        CR1    TIF       4        3        10
+## 3        CR2  Serum      11        2         5
+## 4        CR2    TIF       5       10         4&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## Tidy-ify data for easy calculations
+## Key steps here:
+## - gather: this will take all the different readouts
+##     and put them together under a new column specifying
+##     the metabolite, and a separate column with the value
+## - spread: this takes your data and instead of having
+##     a separate row for each Serum and TIF reading, we
+##     create two new columns each for Serum and TIF, and
+##     spread our `value` column out. less tidy, but better
+##     for log2foldchange calculations
+tidy_dat &amp;lt;- dat %&amp;gt;%
+    tidyr::gather(metabolite, value,
+                  -Patient.ID, -Tissue) %&amp;gt;%
+    spread(Tissue, value)
+tidy_dat&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 6 × 4
+##   Patient.ID metabolite Serum   TIF
+## *      &amp;lt;chr&amp;gt;      &amp;lt;chr&amp;gt; &amp;lt;dbl&amp;gt; &amp;lt;dbl&amp;gt;
+## 1        CR1    Glucose     1     4
+## 2        CR1  Glutamate     3    10
+## 3        CR1   Pyruvate     2     3
+## 4        CR2    Glucose    11     5
+## 5        CR2  Glutamate     5     4
+## 6        CR2   Pyruvate     2    10&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## Calculate fold-change across tissues per patient
+## All we do here is a `mutate()` step, which
+## creates a new column based on some input, in this case
+## log2 foldchange of the column Serum over TIF
+pc &amp;lt;- 0.01  # pseudocount for lfc calc
+
+calc_dat &amp;lt;- tidy_dat %&amp;gt;%
+    dplyr::mutate(
+               lfc_Serum_TIF = log2((Serum + pc) / (TIF + pc))
+           )
+calc_dat&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 6 × 5
+##   Patient.ID metabolite Serum   TIF lfc_Serum_TIF
+##        &amp;lt;chr&amp;gt;      &amp;lt;chr&amp;gt; &amp;lt;dbl&amp;gt; &amp;lt;dbl&amp;gt;         &amp;lt;dbl&amp;gt;
+## 1        CR1    Glucose     1     4        -1.989
+## 2        CR1  Glutamate     3    10        -1.734
+## 3        CR1   Pyruvate     2     3        -0.583
+## 4        CR2    Glucose    11     5         1.136
+## 5        CR2  Glutamate     5     4         0.321
+## 6        CR2   Pyruvate     2    10        -2.316&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Test Post</title>
@@ -15,7 +95,8 @@
       <pubDate>Tue, 04 Apr 2017 00:00:00 +0000</pubDate>
       
       <guid>http://robertamezquita.github.io/post/2017-04-04-test-post/</guid>
-      <description>&lt;p&gt;Trying out a new post just to see how this system works. Already found that (featured) images don’t seem to be working on the home page, but do work on the /blog/ subdomain. Also I need to make sure to set the “type: ‘post’” in the YAML header. Anyways, let’s see how beautifully R code renders..&lt;/p&gt;
+      <description>&lt;p&gt;Trying out a new post just to see how this system works. Already found that (featured) images don’t seem to be working on the home page, but do work on the /blog/ subdomain. Also I need to make sure to set the “type: ‘post’” in the YAML header. Anyways, let’s see how beautifully R code renders now again more..&lt;/p&gt;
+&lt;!--more--&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## run in a chunk with `include = FALSE`
 ## library(tidyverse) 
 
