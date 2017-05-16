@@ -2,7 +2,7 @@
 title: Recovering R Packages Automagically
 author: Robert A. Amezquita
 date: '2017-05-16'
-slug: recovering-r-packages-automagically
+slug: ''
 categories: []
 tags: []
 description: ''
