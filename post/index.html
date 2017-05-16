@@ -35,7 +35,7 @@
 
 
 
-<meta property="og:updated_time" content="2017-04-06T00:00:00&#43;00:00"/>
+<meta property="og:updated_time" content="2017-05-16T00:00:00&#43;00:00"/>
 
 
 
@@ -188,11 +188,11 @@
 
                 
                     <li>
-                        <a href="http://robertamezquita.github.io/post/2017-04-06-munging-contiguous-data-to-wide-format/"><p>Munging Contiguous Data to Wide Format</p></a>
+                        <a href="http://robertamezquita.github.io/post/recovering-r-packages-automagically/"><p>Recovering R Packages Automagically</p></a>
                     </li>
                 
                     <li>
-                        <a href="http://robertamezquita.github.io/blog/a-new-hugo-theme-blog/"><p>A New Hugo Themed Blog</p></a>
+                        <a href="http://robertamezquita.github.io/post/2017-04-23-analysis-in-practice-part-2-tidy/"><p>Analysis in Practice Part 2 - Tidy</p></a>
                     </li>
                 
             </ul>
@@ -214,7 +214,7 @@
     <header>
     <div class="title">
         
-            <h2><a href="http://robertamezquita.github.io/post/2017-04-06-munging-contiguous-data-to-wide-format/">Munging Contiguous Data to Wide Format</a></h2>
+            <h2><a href="http://robertamezquita.github.io/post/recovering-r-packages-automagically/">Recovering R Packages Automagically</a></h2>
         
         
     </div>
@@ -224,11 +224,11 @@
         
 
         <time class="published"
-            datetime='2017-04-06'>
-            April 6, 2017</time>
+            datetime='2017-05-16'>
+            May 16, 2017</time>
         <span class="author">Robert A. Amezquita</span>
         
-            <p>3 minute read</p>
+            <p>2 minute read</p>
         
         
     </div>
@@ -236,12 +236,11 @@
 
     
 
-    <p>Here I just wanted to take a quick second to share a small code snippet that illustrates munging a contiguous dataset to a wide format.
-What do I mean by that? Consider the following example: let’s say we have a dataset where we have patients A, B, and C, and we take two tissues from each patient - one of Serum and one of TIF (tumor interstitial fluid), and from each tissue assay a whole host of metabolites, each with its own column.</p>
+    <p>In the process of working on a new R package, one of the TODO’s on my list was testing it on a new version of R. However, upgrading R is a somewhat dreaded process, as this involves (re)installing all your old packages. While solutions like packrat deal with R package dependencies, this doesn’t seem to work for R upgrades. Another solution involves simply copying the R package library into the new R version’s package library, but this introduces the issue of potential breakage.</p>
 
     <footer>
         <ul class="actions">
-            <li><a href="http://robertamezquita.github.io/post/2017-04-06-munging-contiguous-data-to-wide-format/" class="button big">Continue Reading</a></li>
+            <li><a href="http://robertamezquita.github.io/post/recovering-r-packages-automagically/" class="button big">Continue Reading</a></li>
         </ul>
         <ul class="stats">
     
@@ -263,7 +262,7 @@ What do I mean by that? Consider the following example: let’s say we have a da
     <header>
     <div class="title">
         
-            <h2><a href="http://robertamezquita.github.io/blog/a-new-hugo-theme-blog/">A New Hugo Themed Blog</a></h2>
+            <h2><a href="http://robertamezquita.github.io/post/2017-04-23-analysis-in-practice-part-2-tidy/">Analysis in Practice Part 2 - Tidy</a></h2>
         
         
     </div>
@@ -273,45 +272,24 @@ What do I mean by that? Consider the following example: let’s say we have a da
         
 
         <time class="published"
-            datetime='2017-04-04'>
-            April 4, 2017</time>
+            datetime='2017-04-23'>
+            April 23, 2017</time>
         <span class="author">Robert A. Amezquita</span>
         
-            <p>1 minute read</p>
+            <p>8 minute read</p>
         
         
     </div>
 </header>
 
     
-    
 
-    
-        
-        
-
-
-
-
-    
-    
-        
-    
-
-
-        
-
-        <a href="http://robertamezquita.github.io/blog/a-new-hugo-theme-blog/" class="image featured">
-            <img src="/img/2017/04/pic01.jpg" alt="Puppies in the car" />
-        </a>
-    
-
-
-    <p>I decided to try retheming my site to be a bit more image focused, and to have a more modern look and feel to it. Just a fun way to spend a couple hours while my computer finishes unborking itself. Featured is a photo of the dogs in their &lsquo;jetpacks&rsquo; (car harnesses) waiting for Jen to come back from her shopping trip.</p>
+    <p>This is the second part of a series of posts working with an NFL quarterback data, following up after doing some initial cleanup. Here, I’ll focus on how I like to format data for optimal tidyness - the tidy (also known as long) format.
+A Small Example Typically, when we get a dataset, we’ll see it as a series of columns (variables) with values across many rows (each an observation). This format - the wide format - is certainly amenable for human parsing, and also implies a relationship between a single observation across multiple variables.</p>
 
     <footer>
         <ul class="actions">
-            <li><a href="http://robertamezquita.github.io/blog/a-new-hugo-theme-blog/" class="button big">Continue Reading</a></li>
+            <li><a href="http://robertamezquita.github.io/post/2017-04-23-analysis-in-practice-part-2-tidy/" class="button big">Continue Reading</a></li>
         </ul>
         <ul class="stats">
     
@@ -333,7 +311,7 @@ What do I mean by that? Consider the following example: let’s say we have a da
     <header>
     <div class="title">
         
-            <h2><a href="http://robertamezquita.github.io/post/2017-04-04-test-post/">Test Post</a></h2>
+            <h2><a href="http://robertamezquita.github.io/post/2017-04-17-analysis-in-practice-part-1-cleanup/">Analysis in Practice Part 1 - Cleanup</a></h2>
         
         
     </div>
@@ -343,11 +321,11 @@ What do I mean by that? Consider the following example: let’s say we have a da
         
 
         <time class="published"
-            datetime='2017-04-04'>
-            April 4, 2017</time>
+            datetime='2017-04-17'>
+            April 17, 2017</time>
         <span class="author">Robert A. Amezquita</span>
         
-            <p>1 minute read</p>
+            <p>9 minute read</p>
         
         
     </div>
@@ -355,12 +333,11 @@ What do I mean by that? Consider the following example: let’s say we have a da
 
     
 
-    <p>Trying out a new post just to see how this system works. Already found that (featured) images don’t seem to be working on the home page, but do work on the /blog/ subdomain. Also I need to make sure to set the “type: ‘post’” in the YAML header. Anyways, let’s see how beautifully R code renders now again more..
- ## run in a chunk with <code>include = FALSE</code> ## library(tidyverse) ## Run within this chunk with echo = TRUE hello_world &lt;- frame_data( ~first, ~second, ~third, ~fourth, &quot;its&quot;, &quot;a&quot;, &quot;beautiful&quot;, &quot;day&quot; ) hello_world ## # A tibble: 1 × 4 ## first second third fourth ## &lt;chr&gt; &lt;chr&gt; &lt;chr&gt; &lt;chr&gt; ## 1 its a beautiful day Now what happens when I generate a plot?</p>
+    <p>I’ve been really enjoying reading David Robinson’s ‘Introduction to Empirical Bayes’ book. While I’ve taken multiple stats classes as a graduate student, it is refreshing to have a practical guide to applying Bayesian methods to the analysis of real world data, I especially am enjoying the book because compared to purely theoretical, formula heavy sorts of courses, David Robinson’s book presents first and foremost the intuition behind the madness, and steps through all the additional complications that can really imbue power behind these statistical methods.</p>
 
     <footer>
         <ul class="actions">
-            <li><a href="http://robertamezquita.github.io/post/2017-04-04-test-post/" class="button big">Continue Reading</a></li>
+            <li><a href="http://robertamezquita.github.io/post/2017-04-17-analysis-in-practice-part-1-cleanup/" class="button big">Continue Reading</a></li>
         </ul>
         <ul class="stats">
     
@@ -501,13 +478,13 @@ What do I mean by that? Consider the following example: let’s say we have a da
                     <li>
                         <article>
                             <header>
-                                <h3><a href="http://robertamezquita.github.io/post/2017-04-06-munging-contiguous-data-to-wide-format/">Munging Contiguous Data to Wide Format</a></h3>
+                                <h3><a href="http://robertamezquita.github.io/post/recovering-r-packages-automagically/">Recovering R Packages Automagically</a></h3>
                                 
                                     
                                 
                                 <time class="published" datetime=
-                                    '2017-04-06'>
-                                    April 6, 2017</time>
+                                    '2017-05-16'>
+                                    May 16, 2017</time>
                             </header>
                         </article>
                     </li>
@@ -515,13 +492,13 @@ What do I mean by that? Consider the following example: let’s say we have a da
                     <li>
                         <article>
                             <header>
-                                <h3><a href="http://robertamezquita.github.io/blog/a-new-hugo-theme-blog/">A New Hugo Themed Blog</a></h3>
+                                <h3><a href="http://robertamezquita.github.io/post/2017-04-23-analysis-in-practice-part-2-tidy/">Analysis in Practice Part 2 - Tidy</a></h3>
                                 
                                     
                                 
                                 <time class="published" datetime=
-                                    '2017-04-04'>
-                                    April 4, 2017</time>
+                                    '2017-04-23'>
+                                    April 23, 2017</time>
                             </header>
                         </article>
                     </li>

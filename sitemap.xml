@@ -2,6 +2,31 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://robertamezquita.github.io/post/recovering-r-packages-automagically/</loc>
+    <lastmod>2017-05-16T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://robertamezquita.github.io/post/2017-04-23-analysis-in-practice-part-2-tidy/</loc>
+    <lastmod>2017-04-23T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://robertamezquita.github.io/post/2017-04-17-analysis-in-practice-part-1-cleanup/</loc>
+    <lastmod>2017-04-17T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://robertamezquita.github.io/post/2017-04-08-one-year-with-rover/</loc>
+    <lastmod>2017-04-08T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://robertamezquita.github.io/post/2017-04-07-my-emacs-setup/</loc>
+    <lastmod>2017-04-07T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
     <loc>http://robertamezquita.github.io/post/2017-04-06-munging-contiguous-data-to-wide-format/</loc>
     <lastmod>2017-04-06T00:00:00+00:00</lastmod>
   </url>
@@ -29,13 +54,13 @@
   
   <url>
     <loc>http://robertamezquita.github.io/post/</loc>
-    <lastmod>2017-04-06T00:00:00+00:00</lastmod>
+    <lastmod>2017-05-16T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>http://robertamezquita.github.io/</loc>
-    <lastmod>2017-04-06T00:00:00+00:00</lastmod>
+    <lastmod>2017-05-16T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   

@@ -6,8 +6,1350 @@
     <description>Recent content in Posts on R.Amezquita</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Thu, 06 Apr 2017 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Tue, 16 May 2017 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://robertamezquita.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Recovering R Packages Automagically</title>
+      <link>http://robertamezquita.github.io/post/recovering-r-packages-automagically/</link>
+      <pubDate>Tue, 16 May 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://robertamezquita.github.io/post/recovering-r-packages-automagically/</guid>
+      <description>&lt;p&gt;In the process of working on a new R package, one of the TODO’s on my list was testing it on a new version of R. However, upgrading R is a somewhat dreaded process, as this involves (re)installing all your old packages. While solutions like &lt;a href=&#34;https://rstudio.github.io/packrat/&#34;&gt;packrat&lt;/a&gt; deal with R package dependencies, this doesn’t seem to work for R upgrades. Another solution involves simply copying the R package library into the new R version’s package library, but this introduces the issue of potential breakage.&lt;/p&gt;
+&lt;!--more--&gt;
+&lt;p&gt;After some searching, I found multiple solutions that involve &lt;a href=&#34;https://hlplab.wordpress.com/2012/06/01/transferring-installed-packages-between-different-installations-of-r/&#34;&gt;transferring&lt;/a&gt; &lt;a href=&#34;http://stackoverflow.com/questions/7133394/migrating-r-libraries&#34;&gt;installed&lt;/a&gt; &lt;a href=&#34;http://www.schulte-mecklenbeck.com/2011/04/resinstalling-packages-in-r-after-update/&#34;&gt;packages&lt;/a&gt;, all doing the same basic process:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;check what packages you have currently; save the list&lt;/li&gt;
+&lt;li&gt;upgrade R&lt;/li&gt;
+&lt;li&gt;reinstall packages, and compare to find what’s missing&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Unfortunately, all the code that does this task is messier than I’d like, so I took some time (read: procrastinated) to put together a neat little R script that writes your package list file for you, recovers it, and then installs your missing packages automagically.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## How to recover R packages version to version
+##
+## This script eases the transition pains of upgrading R
+## by saving `.rda` files that list out your installed packages
+## to compare across different versions of R, and install
+## missing packages programmatically.
+##
+## This works with CRAN packages and Bioconductor packages,
+## but unfortunately manual installation is required of Github
+## packages. 
+## ---------------------------------------------------------------
+## 0. Functions of note
+
+.current_pkgs &amp;lt;- function() {
+    tmp &amp;lt;- installed.packages()
+    current_pkgs &amp;lt;- as.vector(tmp[is.na(tmp[, &amp;quot;Priority&amp;quot;]), 1])
+    return(current_pkgs)
+}
+
+.compare_pkgs &amp;lt;- function(previous_pkgs) {
+    missing_pkgs &amp;lt;- setdiff(previous_pkgs, .current_pkgs())
+    return(missing_pkgs)
+}
+
+## ----------------------------------------------------------------
+## 1. Save current R version&amp;#39;s set of packages
+path &amp;lt;- paste0(&amp;quot;pkgs_&amp;quot;, gsub(&amp;quot; &amp;quot;, &amp;quot;_&amp;quot;, R.Version()$version.string))
+path &amp;lt;- gsub(&amp;quot;\\(|\\)&amp;quot;, &amp;quot;&amp;quot;, path)
+path &amp;lt;- gsub(&amp;quot;-&amp;quot;, &amp;quot;&amp;quot;, path)
+
+## Write package list for current R version as rda  
+assign(path, .current_pkgs())
+save(list = path, file = paste0(path, &amp;quot;.rda&amp;quot;))
+
+## ----------------------------------------------------------------
+## 2. Upgrade R
+
+## ----------------------------------------------------------------
+## 3. Reinstall packages
+
+## Load in list of previous R version&amp;#39;s packages
+l &amp;lt;- list.files(pattern = &amp;quot;pkgs&amp;quot;)
+path &amp;lt;- l[length(l)] # grab the latest version&amp;#39;s
+load(file = path)
+previous_pkgs &amp;lt;- eval(as.name(gsub(&amp;quot;.rda&amp;quot;, &amp;quot;&amp;quot;, path)))
+
+## Calculate and install missing packages
+missing_pkgs &amp;lt;- .compare_pkgs(previous_pkgs)
+install.packages(missing_pkgs)
+update.packages()
+
+## Bioconductor packages reinstall - post CRAN
+source(&amp;quot;https://bioconductor.org/biocLite.R&amp;quot;)
+biocLite()
+
+missing_pkgs &amp;lt;- .compare_pkgs(previous_pkgs)
+for (i in 1:length(missing)) { biocLite(missing_pkgs[i]) }
+
+## Check `warnings()` to see any failures in installation&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Analysis in Practice Part 2 - Tidy</title>
+      <link>http://robertamezquita.github.io/post/2017-04-23-analysis-in-practice-part-2-tidy/</link>
+      <pubDate>Sun, 23 Apr 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://robertamezquita.github.io/post/2017-04-23-analysis-in-practice-part-2-tidy/</guid>
+      <description>&lt;p&gt;This is the second part of a series of posts working with an NFL quarterback data, following up after doing some initial &lt;a href=&#34;http://robertamezquita.github.io/post/2017-04-17-analysis-in-practice-part-1-cleanup/&#34;&gt;cleanup&lt;/a&gt;. Here, I’ll focus on how I like to format data for optimal tidyness - the tidy (also known as long) format.&lt;/p&gt;
+&lt;div id=&#34;a-small-example&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;A Small Example&lt;/h3&gt;
+&lt;p&gt;Typically, when we get a dataset, we’ll see it as a series of columns (variables) with values across many rows (each an observation). This format - the wide format - is certainly amenable for human parsing, and also implies a relationship between a single observation across multiple variables.&lt;/p&gt;
+&lt;p&gt;What do I mean by this? Let’s take a look at a quick example in code of what we might get in wide format.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(tidyverse)
+
+wide_data &amp;lt;- tribble(
+    ~id, ~height, ~width,
+    &amp;quot;A&amp;quot;,      10,     20,
+    &amp;quot;B&amp;quot;,      5,      11,
+    &amp;quot;C&amp;quot;,      7,      12
+)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Note here how I’m using the &lt;code&gt;tibble&lt;/code&gt; package &lt;code&gt;tribble&lt;/code&gt; function to specify the data object (compared to a regular data frame). So you can see we have two variables - height and width - measured for three objects with id’s A, B, and C.&lt;/p&gt;
+&lt;p&gt;But what if instead of this wide format, we turn it into a &lt;em&gt;long&lt;/em&gt; format? In other words, we can &lt;em&gt;gather&lt;/em&gt; the values and make the following..&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;long_data &amp;lt;- wide_data %&amp;gt;%
+    gather(variable, value, -id)
+
+long_data&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 6 × 3
+##      id variable value
+##   &amp;lt;chr&amp;gt;    &amp;lt;chr&amp;gt; &amp;lt;dbl&amp;gt;
+## 1     A   height    10
+## 2     B   height     5
+## 3     C   height     7
+## 4     A    width    20
+## 5     B    width    11
+## 6     C    width    12&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;While this long format is not as easily readable for humans, it is &lt;em&gt;much&lt;/em&gt; more readable for our &lt;code&gt;tidyverse&lt;/code&gt; tools, such as &lt;code&gt;ggplot2&lt;/code&gt; for visualization, and &lt;code&gt;dplyr&lt;/code&gt; for doing things like summaries of different variables. Let’s try the latter, and doing a summary here of height and width across our observations, A through C.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;summary &amp;lt;- long_data %&amp;gt;%
+    group_by(variable) %&amp;gt;%
+    summarise(average = mean(value)) %&amp;gt;%
+    mutate(average = round(average, digits = 2))
+
+summary&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 2 × 2
+##   variable average
+##      &amp;lt;chr&amp;gt;   &amp;lt;dbl&amp;gt;
+## 1   height    7.33
+## 2    width   14.33&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Here, the function names say it all: I group based on the measurement being taken, and then do a summary (in this case, an average) for each of those groups - height and width. Then the final mutate step just takes the newly created column, &lt;code&gt;average&lt;/code&gt;, and round it down to two digits.&lt;/p&gt;
+&lt;p&gt;This is a pretty trivial example, but when you have lots of data this transformation from wide to long is extremely useful. So, to make a long story short: wide data is great for humans, and long data is great for modern R idioms of programming in the tidyverse.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;back-to-our-nfl-qb-data&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Back to Our NFL QB Data&lt;/h3&gt;
+&lt;p&gt;Let’s go back to our dataset from following the first post, and refresh ourselves on what it looks like:&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;glimpse(raw) ## Invisibly loaded/cleaned data &lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Observations: 12,556
+## Variables: 13
+## $ qb         &amp;lt;chr&amp;gt; &amp;quot;Matt Ryan&amp;quot;, &amp;quot;Jameis Winston&amp;quot;, &amp;quot;Mike Glennon&amp;quot;, &amp;quot;Mat...
+## $ att        &amp;lt;int&amp;gt; 34, 37, 11, 36, 40, 47, 36, 27, 2, 28, 1, 41, 33, 2...
+## $ cmp        &amp;lt;int&amp;gt; 25, 23, 10, 23, 31, 27, 22, 16, 2, 17, 0, 22, 20, 2...
+## $ yds        &amp;lt;dbl&amp;gt; 344, 261, 75, 219, 273, 364, 257, 194, 19, 149, 0, ...
+## $ ypa        &amp;lt;dbl&amp;gt; 10.1, 7.1, 6.8, 6.1, 6.8, 7.7, 7.1, 7.2, 9.5, 5.3, ...
+## $ td         &amp;lt;int&amp;gt; 4, 3, 1, 2, 1, 0, 4, 1, 0, 1, 0, 2, 1, 3, 0, 1, 1, ...
+## $ int        &amp;lt;int&amp;gt; 0, 0, 0, 1, 0, 2, 2, 2, 0, 0, 0, 1, 0, 0, 0, 0, 1, ...
+## $ lg         &amp;lt;chr&amp;gt; &amp;quot;32t&amp;quot;, &amp;quot;28&amp;quot;, &amp;quot;13&amp;quot;, &amp;quot;28t&amp;quot;, &amp;quot;32&amp;quot;, &amp;quot;58&amp;quot;, &amp;quot;46&amp;quot;, &amp;quot;27&amp;quot;, &amp;quot;...
+## $ sack       &amp;lt;dbl&amp;gt; 2, 2, 0, 1, 2, 2, 1, 3, 0, 1, 0, 2, 2, 0, 0, 4, 2, ...
+## $ loss       &amp;lt;dbl&amp;gt; 19, 10, 0, 5, 14, 17, 9, 22, 0, 12, 0, 8, 18, 0, 0,...
+## $ rate       &amp;lt;dbl&amp;gt; 144.7, 110.3, 125.4, 87.6, 103.4, 64.5, 96.6, 62.9,...
+## $ GamePoints &amp;lt;int&amp;gt; 43, 28, 28, 22, 16, 23, 28, 23, 23, 27, 27, 14, 19,...
+## $ year       &amp;lt;int&amp;gt; 2016, 2016, 2016, 2016, 2016, 2016, 2016, 2016, 201...&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;a-quick-inspection-and-debugging&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;A Quick Inspection and Debugging&lt;/h3&gt;
+&lt;p&gt;So we can see that we have a bunch of variables for each quarterback in this wide format. Let’s turn it into the long format similar to above.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;dat &amp;lt;- raw %&amp;gt;%
+    gather(variable, value, -qb)
+dat&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 150,672 × 3
+##                  qb variable value
+##               &amp;lt;chr&amp;gt;    &amp;lt;chr&amp;gt; &amp;lt;chr&amp;gt;
+## 1         Matt Ryan      att    34
+## 2    Jameis Winston      att    37
+## 3      Mike Glennon      att    11
+## 4  Matthew Stafford      att    36
+## 5      Sam Bradford      att    40
+## 6      Carson Wentz      att    47
+## 7       Eli Manning      att    36
+## 8  Ryan Fitzpatrick      att    27
+## 9       Bryce Petty      att     2
+## 10   Ryan Tannehill      att    28
+## # ... with 150,662 more rows&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Odd, we see that the value column is also a character! That’s not good. Let’s look at what’s causing that by trying to convert the value column to numeric, and seeing where it fails:&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;tmp &amp;lt;- dat %&amp;gt;%
+    mutate(value = as.numeric(value))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Warning in evalq(as.numeric(c(&amp;quot;34&amp;quot;, &amp;quot;37&amp;quot;, &amp;quot;11&amp;quot;, &amp;quot;36&amp;quot;, &amp;quot;40&amp;quot;, &amp;quot;47&amp;quot;, &amp;quot;36&amp;quot;, :
+## NAs introduced by coercion&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## Filter on NA values where numeric conversion fails
+## Then take unique values and print first 5
+dat %&amp;gt;%
+    filter(tmp$value %&amp;gt;% is.na) %&amp;gt;%
+    select(value) %&amp;gt;% unique %&amp;gt;%
+    print(n = 5)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 98 × 1
+##   value
+##   &amp;lt;chr&amp;gt;
+## 1  &amp;lt;NA&amp;gt;
+## 2   32t
+## 3   28t
+## 4   95t
+## 5   65t
+## # ... with 93 more rows&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Hmm, so seems we have trailing ‘t’ letters in some of the values (associated with the longest throw metric). We can clip these trailing t’s using the &lt;code&gt;stringr&lt;/code&gt; library and then do the conversion again.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;.clip_t &amp;lt;- function(x) {
+    stringr::str_replace(x, &amp;quot;t&amp;quot;, &amp;quot;&amp;quot;) %&amp;gt;%
+        as.numeric %&amp;gt;%
+            return
+}
+
+dat &amp;lt;- dat %&amp;gt;%
+    mutate(value = map_dbl(value, .clip_t))&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;simple-summaries&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Simple Summaries&lt;/h3&gt;
+&lt;p&gt;Great, so we have a long format - what can we do? Let’s again to some simple summaries, calculating the mean and standard deviations for each metric.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;dat %&amp;gt;%
+    group_by(variable) %&amp;gt;%
+    summarise(avg = mean(value, na.rm = TRUE),
+              sd = sd(value, na.rm = TRUE)) %&amp;gt;%
+    mutate_at(vars(-variable), round, digits = 2)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 12 × 3
+##      variable     avg     sd
+##         &amp;lt;chr&amp;gt;   &amp;lt;dbl&amp;gt;  &amp;lt;dbl&amp;gt;
+## 1         att   26.87  13.62
+## 2         cmp   16.12   8.81
+## 3  GamePoints   21.42  10.67
+## 4         int    0.80   0.97
+## 5          lg   33.36  18.32
+## 6        loss   11.97  11.96
+## 7        rate   80.22  32.07
+## 8        sack    1.86   1.70
+## 9          td    1.12   1.12
+## 10        yds  186.23 105.90
+## 11       year 2005.94   6.12
+## 12        ypa    6.88   4.20&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This last step, the &lt;code&gt;mutate_at&lt;/code&gt;, simply looks at what variables (via &lt;code&gt;vars&lt;/code&gt;), aka columns, are present, and then applies a function (in this case, &lt;code&gt;round&lt;/code&gt;, which takes in additional comma separated arguments (I want to round here to two digits). The &lt;code&gt;vars&lt;/code&gt; helper function is used to provide users with the ability to use bare column names (aka no quotes) when selecting columns to &lt;code&gt;mutate&lt;/code&gt; (similar to how the &lt;code&gt;select&lt;/code&gt; function works by default).&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;an-initial-exploration-with-ggplot2&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;An Initial Exploration with &lt;code&gt;ggplot2&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;So great! We got some simple summaries here. But can’t we get something similar by just using the &lt;code&gt;summary&lt;/code&gt; or &lt;code&gt;apply&lt;/code&gt; functions? Yes, but this code is much easier to read, and then gives us the ability to do the cool bit: (gg)plotting! While a regular &lt;code&gt;plot&lt;/code&gt; would work fine with us specifying our own columns, and is good for quick inspections, for more fanciful plots, ggplot is, as they say, bae.&lt;/p&gt;
+&lt;p&gt;To round out this post, let’s do a series of histograms for each metric.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;dat %&amp;gt;%
+    ## Specify common x-axis
+    ggplot(aes(x = value)) +
+    ## Create new plots for each metric
+    facet_wrap(~ variable, scales = &amp;quot;free&amp;quot;) +
+    ## Plot histograms on each individual facet
+    geom_histogram(bins = 30, colour = &amp;quot;white&amp;quot;, fill = &amp;quot;black&amp;quot;) +
+    ## Plot Aesthetics
+    labs(x = &amp;quot;&amp;quot;, y = &amp;quot;Count&amp;quot;) +
+    cowplot::theme_cowplot(font_size = 10) +    
+    theme(axis.text.x = element_text(angle = 30, hjust = 1))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Warning: Removed 85 rows containing non-finite values (stat_bin).&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;http://robertamezquita.github.io/post/2017-04-23-analysis-in-practice-part-2-tidy_files/figure-html/unnamed-chunk-10-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Much prettier, and much shorter than any base code. Some interesting questions to think about:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;There’s a fair number of values stacked at the 0-5 range for completions, and similarly 0-50 yard range for yards. Are these different types of QB’s (backups? wildcat plays?), and how might we remove them from consideration in estimating a QB’s efficacy?&lt;/li&gt;
+&lt;li&gt;Which values are correlated? For example, are yards correlated with completions? Are interceptions correlated with attempts?&lt;/li&gt;
+&lt;li&gt;How might we start to rate QBs?&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;So the takeaway from this post is to think about we can make data tidy, from wide to long formatting, to make it easier for us to do cool things in the tidyverse such as plotting and statistical transformations. While these were fairly toy-level examples, this tidy format will be much more useful later on. And bonus: this also helps us with doing some data debugging, as we saw here!&lt;/p&gt;
+&lt;p&gt;Of course, huge thanks to Hadley Wickham for his writing on the topic, much more eloquent than mine in explaining the concept and its many uses - check out the paper &lt;a href=&#34;http://vita.had.co.nz/papers/tidy-data.html&#34;&gt;here&lt;/a&gt;, which ostensibly has been a driving force in the &lt;code&gt;tidyverse&lt;/code&gt; philosophy.&lt;/p&gt;
+&lt;/div&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Analysis in Practice Part 1 - Cleanup</title>
+      <link>http://robertamezquita.github.io/post/2017-04-17-analysis-in-practice-part-1-cleanup/</link>
+      <pubDate>Mon, 17 Apr 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://robertamezquita.github.io/post/2017-04-17-analysis-in-practice-part-1-cleanup/</guid>
+      <description>&lt;p&gt;I’ve been really enjoying reading David Robinson’s ‘Introduction to Empirical Bayes’ book. While I’ve taken multiple stats classes as a graduate student, it is refreshing to have a practical guide to applying Bayesian methods to the analysis of real world data, I especially am enjoying the book because compared to purely theoretical, formula heavy sorts of courses, David Robinson’s book presents first and foremost the intuition behind the madness, and steps through all the additional complications that can really imbue power behind these statistical methods.&lt;/p&gt;
+&lt;p&gt;And, as a bonus, I can now clearly imagine my datasets consisting of genes as tiny little baseball players vying to get more at-bats so that they can become the next Mike Piazza of the genome.&lt;/p&gt;
+&lt;!--more--&gt;
+&lt;p&gt;Now, I’ll admit, I’m not a huge baseball fan (even though I am a huge admirer of sabermetrics). But I do enjoy watching the NFL on ocassion (less so since the Chargers have been jerks to my beloved hometown and taken Philip Rivers with them to Los Angeles). And so that brings me to applying these methods to a QB focused, NFL dataset. With a quick search, I found this &lt;a href=&#34;https://www.kaggle.com/speckledpingu/nfl-qb-stats/version/1&#34;&gt;Kaggle dataset&lt;/a&gt; of QB stats from 1996 to 2016.&lt;/p&gt;
+&lt;p&gt;In this first post, I want to first show some of the things I do when I first get a dataset - in particular, cleaning the data and doing some preliminary inspection. Let’s dive in!&lt;/p&gt;
+&lt;div id=&#34;the-right-tools-for-the-job-tidyverse&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;The Right Tools for the Job: &lt;code&gt;Tidyverse&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;Without the right tools, it becomes much harder to do a job correctly and, more so, efficiently. My programming language of choice is &lt;code&gt;R&lt;/code&gt;, primarily because it has my new favorite swiss army knife - the &lt;code&gt;tidyverse&lt;/code&gt;. It is not only a toolset but also a philosophy underlying data organization that I don’t have the space to get into here (and frankly, that is much more eloquently detailed elsewhere), but suffice it to say that most of the code herein uses &lt;code&gt;tidyverse&lt;/code&gt; tools as opposed to base &lt;code&gt;R&lt;/code&gt;. I’ll try to show the specific package a function comes from using the &lt;code&gt;&amp;lt;package&amp;gt;::&amp;lt;function&amp;gt;&lt;/code&gt; annotation as much as possible, but you can also search for a function’s origin using the &lt;code&gt;??&amp;lt;function&amp;gt;&lt;/code&gt; command in &lt;code&gt;R&lt;/code&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;first-pass-inspection&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;First Pass Inspection&lt;/h3&gt;
+&lt;p&gt;Let’s start with just reading in the data, and giving it a quick look using &lt;code&gt;tibble::glimpse&lt;/code&gt;.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(tidyverse) ## loads dplyr, tidyr, ggplot2, etc.
+library(stringr)   ## great for strings
+library(forcats)   ## great for dealing with factors
+
+## File path - split up for to reduce line width
+path &amp;lt;- paste0(&amp;quot;../../static/post/&amp;quot;,
+               &amp;quot;2017-04-17-analyzing-qbs-empirical-bayes/&amp;quot;,
+               &amp;quot;QBStats_all.csv.gz&amp;quot;)
+
+## Read in the (compressed) CSV
+raw &amp;lt;- readr::read_csv(path)
+
+## View each variable and first observations
+glimpse(raw, width = 43)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Observations: 12,556
+## Variables: 13
+## $ qb         &amp;lt;chr&amp;gt; &amp;quot;Matt RyanM. Ryan&amp;quot;,...
+## $ att        &amp;lt;int&amp;gt; 34, 37, 11, 36, 40,...
+## $ cmp        &amp;lt;int&amp;gt; 25, 23, 10, 23, 31,...
+## $ yds        &amp;lt;dbl&amp;gt; 344, 261, 75, 219, ...
+## $ ypa        &amp;lt;dbl&amp;gt; 10.1, 7.1, 6.8, 6.1...
+## $ td         &amp;lt;int&amp;gt; 4, 3, 1, 2, 1, 0, 4...
+## $ int        &amp;lt;int&amp;gt; 0, 0, 0, 1, 0, 2, 2...
+## $ lg         &amp;lt;chr&amp;gt; &amp;quot;32t&amp;quot;, &amp;quot;28&amp;quot;, &amp;quot;13&amp;quot;, ...
+## $ sack       &amp;lt;dbl&amp;gt; 2, 2, 0, 1, 2, 2, 1...
+## $ loss       &amp;lt;dbl&amp;gt; 19, 10, 0, 5, 14, 1...
+## $ rate       &amp;lt;dbl&amp;gt; 144.7, 110.3, 125.4...
+## $ GamePoints &amp;lt;int&amp;gt; 43, 28, 28, 22, 16,...
+## $ year       &amp;lt;int&amp;gt; 2016, 2016, 2016, 2...&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;I won’t delve into the columns and what they mean in this post, but suffice it to say that each row pertains to a given quarterback’s performance metrics over the course of a year.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;fixing-up-names-using-stringr-and-map&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Fixing Up Names Using &lt;code&gt;stringr&lt;/code&gt; and &lt;code&gt;map&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;Now, we see one immediate problem: the &lt;code&gt;qb&lt;/code&gt; column values look attrocious. Specifically, it seems the name is repeated, with a space in the first iteration and first initial separated from the last name by an underscore on the second iteration.&lt;/p&gt;
+&lt;p&gt;Here’s where the &lt;code&gt;stringr&lt;/code&gt; library comes in - we need to parse this &lt;code&gt;qb&lt;/code&gt; column - I’m going to create a “&lt;last&gt;, &lt;first&gt;” format for this column using a function I’m calling &lt;code&gt;.parse_qb&lt;/code&gt; (I use the &lt;code&gt;.&lt;/code&gt; to prepend functions when its very specific to the dataset/use-case). Also, one interesting thing to note is the “underscore” is not really an underscore, but some other non-standard character that took me a bit to debug. Always watch those encodings!&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## Parse QB column to &amp;quot;&amp;lt;last&amp;gt;, &amp;lt;first&amp;gt;&amp;quot; format
+.parse_qb &amp;lt;- function(x) {
+    y &amp;lt;- stringr::str_split(x, &amp;quot; &amp;quot;) %&amp;gt;% unlist
+    last &amp;lt;- stringr::str_split(y[2], &amp;quot; &amp;quot;) %&amp;gt;%
+        unlist %&amp;gt;% .[2] # Note encoding of pseudo underscore
+    first &amp;lt;- y[1]
+    name &amp;lt;- paste0(last, &amp;quot;, &amp;quot;, first)
+    return(name)
+}
+
+raw %&amp;gt;%
+    mutate(qb = map_chr(qb, .parse_qb)) %&amp;gt;% ## See note below
+    select(qb) %&amp;gt;% head(3)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 3 × 1
+##                qb
+##             &amp;lt;chr&amp;gt;
+## 1      Ryan, Matt
+## 2 Winston, Jameis
+## 3   Glennon, Mike&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Much better (at least, per this first group of names!)! One of my new favorite functions here is the &lt;code&gt;map&lt;/code&gt; family from the &lt;code&gt;purrr&lt;/code&gt; package. This family functions in a similar spirit as &lt;code&gt;lapply&lt;/code&gt;, but is much neater in its application and also has subfunctions that can specify the returned output’s type - in this case, I specify that the output will be a character string (hence the &lt;code&gt;_chr&lt;/code&gt; suffix). And when paired with the &lt;code&gt;dplyr::mutate&lt;/code&gt; function to change/add columns, it really shines for munging data and &lt;em&gt;mise en place&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;But okay, so we parsed the &lt;code&gt;qb&lt;/code&gt; column..but did it happen correctly? Now, in writing this post, I was working on filtering out &lt;code&gt;NA&lt;/code&gt; values, and found that some of the names indeed had &lt;code&gt;NA&lt;/code&gt; values for the first name group! And sometimes that’s exactly how you find errors - by chance. I could’ve avoided this by having a more exhaustive test case list in my case. Anyways, I’ll show one example that was broken: Odell Beckham Jr.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;odell &amp;lt;- stringr::str_subset(raw$qb, &amp;quot;Odell&amp;quot;)[1]
+ryan &amp;lt;- raw$qb[1]
+
+## Raw
+ryan&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] &amp;quot;Matt RyanM. Ryan&amp;quot;&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;odell&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] &amp;quot;Odell Beckham Jr.O. Beckham&amp;quot;&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## Parsed v1
+.parse_qb(ryan)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] &amp;quot;Ryan, Matt&amp;quot;&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;.parse_qb(odell) &lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] &amp;quot;NA, Odell&amp;quot;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Yikes! While Matt Ryan’s is fine, Odell’s first name is evaluating to an &lt;code&gt;NA&lt;/code&gt;. And the issue is coming from using a space to separate the first time. So let’s take a different tact: since the entire name is before the weird underscore, let’s split on that and the dot to get a first field, then remove the last letter if it is uppercase (aka, a first initial).&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## Parse QB column to &amp;quot;&amp;lt;last&amp;gt;, &amp;lt;first&amp;gt;&amp;quot; format
+.parse_qb_v2 &amp;lt;- function(x) {
+    ## Initial parsing by pseudo-underscore and period
+    ## Extract &amp;quot;&amp;lt;first&amp;gt; &amp;lt;last&amp;gt;&amp;lt;first initial&amp;gt;.&amp;quot;
+    y &amp;lt;- str_split(x, &amp;quot; &amp;quot;) %&amp;gt;%
+        unlist %&amp;gt;% .[1] %&amp;gt;%
+        str_split(&amp;quot;\\.&amp;quot;) %&amp;gt;%
+        unlist %&amp;gt;% .[1] 
+
+    ## Split by character
+    split &amp;lt;- str_split(y, &amp;quot;&amp;quot;) %&amp;gt;% unlist
+
+    ## Check if last letter is uppercase
+    last_letter_upper &amp;lt;- split %&amp;gt;%
+        .[length(.)] %&amp;gt;%
+        str_detect(., toupper(letters)) %&amp;gt;%
+        sum &amp;gt; 0
+
+    ## Drop last letter if its uppercase (eg first initial)
+    if (last_letter_upper == TRUE) {
+        name &amp;lt;- split[-length(split)] %&amp;gt;% paste(collapse = &amp;quot;&amp;quot;)
+    } else {
+        name &amp;lt;- split %&amp;gt;% paste(collapse = &amp;quot;&amp;quot;)
+    }
+
+    return(name)
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Much more code here than the first pass, but now let’s check our test cases:&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;.parse_qb_v2(odell)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] &amp;quot;Odell Beckham Jr&amp;quot;&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;.parse_qb_v2(ryan)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] &amp;quot;Matt Ryan&amp;quot;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;And now it finally works for both our test cases, and could even automate testing using a package like &lt;code&gt;testhat&lt;/code&gt;. Phew! Just goes to show, a little error checking goes a long way when munging! And now we have a function that clean our &lt;code&gt;qb&lt;/code&gt; column.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;checking-for-na-values&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Checking for &lt;code&gt;NA&lt;/code&gt; Values&lt;/h3&gt;
+&lt;p&gt;Another common task is to identify rows with &lt;code&gt;NA&lt;/code&gt; values. Sometimes its appropriate to keep them in place, or re-encode them even, but first let’s inspect them to make sure we won’t miss anything important and assess how many we have. We’ll use the base function &lt;code&gt;complete.cases&lt;/code&gt;, passing in the dataset using the &lt;code&gt;.&lt;/code&gt; (dot) notation from the &lt;code&gt;%&amp;gt;%&lt;/code&gt; (pipe) to &lt;code&gt;dplyr::filter&lt;/code&gt; down to only rows with &lt;code&gt;NA&lt;/code&gt; values, and look at the number of rows with such &lt;code&gt;NA&lt;/code&gt; values, and inspect some examples.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## Identify QB&amp;#39;s with incomplete records
+incomplete &amp;lt;- raw %&amp;gt;%
+    filter(!complete.cases(.)) 
+
+nrow(incomplete) ## number of rows with &amp;gt;0 NA vals&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] 17&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;glimpse(incomplete, width = 43)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Observations: 17
+## Variables: 13
+## $ qb         &amp;lt;chr&amp;gt; &amp;quot;Michael PittmanM. ...
+## $ att        &amp;lt;int&amp;gt; 18, 9, 2, 3, 19, 5,...
+## $ cmp        &amp;lt;int&amp;gt; 58, 43, 1, -6, 45, ...
+## $ yds        &amp;lt;dbl&amp;gt; 3.22, 4.78, 0.50, -...
+## $ ypa        &amp;lt;dbl&amp;gt; 9, 18, 1, 0, 8, 7, ...
+## $ td         &amp;lt;int&amp;gt; 2, 0, 1, 0, 0, 0, 0...
+## $ int        &amp;lt;int&amp;gt; NA, NA, NA, NA, NA,...
+## $ lg         &amp;lt;chr&amp;gt; NA, NA, NA, NA, NA,...
+## $ sack       &amp;lt;dbl&amp;gt; NA, NA, NA, NA, NA,...
+## $ loss       &amp;lt;dbl&amp;gt; NA, NA, NA, NA, NA,...
+## $ rate       &amp;lt;dbl&amp;gt; NA, NA, NA, NA, NA,...
+## $ GamePoints &amp;lt;int&amp;gt; 34, 34, 34, 34, 27,...
+## $ year       &amp;lt;int&amp;gt; 2009, 2009, 2009, 2...&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;So it looks like we have 17 rows with NA values, occuring in columns like interceptions, sacks, longest pass (lg) across Michael Pittman and others.&lt;/p&gt;
+&lt;p&gt;Here is where some sleuthing comes in: is there something in common between where all these NA values occur?&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;incomplete$year %&amp;gt;% table&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## .
+## 2009 
+##   17&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;incomplete$att &lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##  [1] 18  9  2  3 19  5  4 16  8  7  2  1 12  2  3  3  3&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Looking at the years in which we have the NA values, we see that it only seems to be 2009 that is affected. Then, if we look at attempts, we see that most of these are very low attempt years by these QB’s - most likely backups or wildcat plays (where say, a wide receiver throws the ball in a trick play).&lt;/p&gt;
+&lt;p&gt;So we can either ignore the NA values, and hope no errors are introduced downstream, or simply remove them. For now, we’ll go with keeping them for completeness, but probably won’t lose sleep if we remove them later on.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;odells-short-qb-career&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Odell’s Short QB Career&lt;/h3&gt;
+&lt;p&gt;For any NFL savvy readers, you might notice that Odell Beckham Jr is &lt;em&gt;not&lt;/em&gt; a QB, but rather a wide receiver! That’s probably because he was part of a trick play where he threw the ball. We’ll have to keep this in mind as we go downstream, that there are pretender “QBs” in our dataset, and also backups who get almost no play time, that we may want to remove from consideration downstream.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;wrap-up&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Wrap-up&lt;/h3&gt;
+&lt;p&gt;These are just some of the things I do to first clean the dataset, but we haven’t yet explored the data thoroughly! We’ll get to that in a subsequent post, after we tidy it for ease of use with the &lt;code&gt;tidyverse&lt;/code&gt;.&lt;/p&gt;
+&lt;/div&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>One Year with Rover</title>
+      <link>http://robertamezquita.github.io/post/2017-04-08-one-year-with-rover/</link>
+      <pubDate>Sat, 08 Apr 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://robertamezquita.github.io/post/2017-04-08-one-year-with-rover/</guid>
+      <description>&lt;p&gt;Well, at least approximately, it was one year ago that my then-fiance Jen and I started doing dog sitting with &lt;a href=&#34;https://www.rover.com/members/robert-a-scientist-fellow-dog-dad-married/&#34;&gt;Rover&lt;/a&gt; as an extracurricular activity.&lt;/p&gt;
+
+&lt;p&gt;Why did we jump in? First and most importantly, because we absolutely love dogs! I&amp;rsquo;ve always dreamed of someday leading a pack of dogs. However, for many reasons, this isn&amp;rsquo;t really a good idea, and so I wanted to do the next best thing, and instead help take care of dogs when their parents travel.&lt;/p&gt;
+
+&lt;p&gt;The experience has been a blessing, as Jen, myself, and our two pups, Chester and Maddie, have gotten to meet so many great dogs, each wonderful in their own unique way. We&amp;rsquo;ve learned so much about our dogs and dogs in general, that its been an invaluable experience, and for anyone with the dedication, it really is a deeply enriching experience.&lt;/p&gt;
+
+&lt;p&gt;One of the best parts about Rover is the photo updates - naturally, over the course of many sittings I&amp;rsquo;ve accumulated numerous awesome photos of all our visitors. I wanted to take a moment to share some of my personal favorites from our visitors, plus some extras from our own travels - enjoy!&lt;/p&gt;
+
+
+
+
+    
+
+    
+    
+
+
+
+
+    
+    
+        
+    
+
+
+    
+
+    &lt;div class=&#34;box alt&#34;&gt;
+        &lt;div class=&#34;row uniform&#34;&gt;
+        
+        
+        
+            
+                &lt;div class=&#34;4u&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/chester.jpg&#39;
+                            alt=&#34;Chester sit&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+            
+                &lt;div class=&#34;4u&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/maddie.JPG&#39;
+                            alt=&#34;Maddie sit&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+            
+                &lt;div class=&#34;4u$&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/murphy.JPG&#39;
+                            alt=&#34;Murphy loves tennis balls&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+        &lt;/div&gt;
+    &lt;/div&gt;
+
+
+
+&lt;p&gt;
+
+
+    
+
+    
+    
+
+
+
+
+    
+    
+        
+    
+
+
+    
+
+    &lt;div class=&#34;box alt&#34;&gt;
+        &lt;div class=&#34;row uniform&#34;&gt;
+        
+        
+        
+            
+                &lt;div class=&#34;4u&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/jose.JPG&#39;
+                            alt=&#34;Jose in bed&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+            
+                &lt;div class=&#34;4u&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/jose-snow.JPG&#39;
+                            alt=&#34;Jose snowday&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+            
+                &lt;div class=&#34;4u$&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/chester-snow.JPG&#39;
+                            alt=&#34;Chester snowday&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+        &lt;/div&gt;
+    &lt;/div&gt;
+
+&lt;/p&gt;
+
+&lt;p&gt;
+
+
+    
+
+    
+    
+
+
+
+
+    
+    
+        
+    
+
+
+    
+
+    &lt;div class=&#34;box alt&#34;&gt;
+        &lt;div class=&#34;row uniform&#34;&gt;
+        
+        
+        
+            
+                &lt;div class=&#34;4u&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/three.JPG&#39;
+                            alt=&#34;How they sat still we will never know&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+            
+                &lt;div class=&#34;4u&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/lukie-chester.JPG&#39;
+                            alt=&#34;Two best buds share the cube&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+            
+                &lt;div class=&#34;4u$&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/maddie-bed.JPG&#39;
+                            alt=&#34;Maddies favorite spot&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+        &lt;/div&gt;
+    &lt;/div&gt;
+
+&lt;/p&gt;
+
+&lt;p&gt;
+
+
+    
+
+    
+    
+
+
+
+
+    
+    
+        
+    
+
+
+    
+
+    &lt;div class=&#34;box alt&#34;&gt;
+        &lt;div class=&#34;row uniform&#34;&gt;
+        
+        
+        
+            
+                &lt;div class=&#34;4u&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/twosome.JPG&#39;
+                            alt=&#34;Exploring the park&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+            
+                &lt;div class=&#34;4u&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/jack-charlie.JPG&#39;
+                            alt=&#34;Our favorite pair&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+            
+                &lt;div class=&#34;4u$&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/stella.JPG&#39;
+                            alt=&#34;Stellas happy face&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+        &lt;/div&gt;
+    &lt;/div&gt;
+
+&lt;/p&gt;
+
+&lt;p&gt;
+
+
+    
+
+    
+    
+
+
+
+
+    
+    
+        
+    
+
+
+    
+
+    &lt;div class=&#34;box alt&#34;&gt;
+        &lt;div class=&#34;row uniform&#34;&gt;
+        
+        
+        
+            
+                &lt;div class=&#34;4u&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/lilly.JPG&#39;
+                            alt=&#34;Lillys chair&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+            
+                &lt;div class=&#34;4u&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/sansa.JPG&#39;
+                            alt=&#34;Sansa the puppy&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+            
+                &lt;div class=&#34;4u$&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/frenchie.JPG&#39;
+                            alt=&#34;Yorkie number one&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+        &lt;/div&gt;
+    &lt;/div&gt;
+
+&lt;/p&gt;
+
+&lt;p&gt;
+
+
+    
+
+    
+    
+
+
+
+
+    
+    
+        
+    
+
+
+    
+
+    &lt;div class=&#34;box alt&#34;&gt;
+        &lt;div class=&#34;row uniform&#34;&gt;
+        
+        
+        
+            
+                &lt;div class=&#34;4u&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/baby.JPG&#39;
+                            alt=&#34;Puppy two&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+            
+                &lt;div class=&#34;4u&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/toto.JPG&#39;
+                            alt=&#34;Yorkie number two&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+            
+                &lt;div class=&#34;4u$&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/sunbath.JPG&#39;
+                            alt=&#34;A dogs kind of day&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+        &lt;/div&gt;
+    &lt;/div&gt;
+
+&lt;/p&gt;
+
+&lt;p&gt;
+
+
+    
+
+    
+    
+
+
+
+
+    
+    
+        
+    
+
+
+    
+
+    &lt;div class=&#34;box alt&#34;&gt;
+        &lt;div class=&#34;row uniform&#34;&gt;
+        
+        
+        
+            
+                &lt;div class=&#34;4u&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/bigguy.JPG&#39;
+                            alt=&#34;Our biggest visitor to date&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+            
+                &lt;div class=&#34;4u&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/ellie.JPG&#39;
+                            alt=&#34;Baby ellie back home&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+            
+                &lt;div class=&#34;4u$&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/lucas.JPG&#39;
+                            alt=&#34;Lukie pookies favorite spot&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+        &lt;/div&gt;
+    &lt;/div&gt;
+
+&lt;/p&gt;
+
+&lt;p&gt;
+
+
+    
+
+    
+    
+
+
+
+
+    
+    
+        
+    
+
+
+    
+
+    &lt;div class=&#34;box alt&#34;&gt;
+        &lt;div class=&#34;row uniform&#34;&gt;
+        
+        
+        
+            
+                &lt;div class=&#34;4u&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/chester-zzz.JPG&#39;
+                            alt=&#34;Ready for a surprise belly rub&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+            
+                &lt;div class=&#34;4u&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/philly.JPG&#39;
+                            alt=&#34;Our family trip to Philly&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+            
+                &lt;div class=&#34;4u$&#34;&gt;
+            
+            
+        
+            
+                
+                    
+                    &lt;span class=&#34;image fit&#34;&gt;
+                
+            
+            
+        
+            
+                
+                        &lt;img src=&#39;http://robertamezquita.github.io/img/2017/04/maddie-face.JPG&#39;
+                            alt=&#34;The Maddie face&#34; /&gt;
+                    &lt;/span&gt;&lt;/div&gt;
+                
+                
+            
+            
+        
+        &lt;/div&gt;
+    &lt;/div&gt;
+
+&lt;/p&gt;
+
+&lt;p&gt;
+
+
+&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>My `emacs` Setup</title>
+      <link>http://robertamezquita.github.io/post/2017-04-07-my-emacs-setup/</link>
+      <pubDate>Fri, 07 Apr 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://robertamezquita.github.io/post/2017-04-07-my-emacs-setup/</guid>
+      <description>&lt;p&gt;As I&amp;rsquo;ve gone further and further down the rabbit hole of computational biology, one thing that has remained with me is my emacs habit. When I first started graduate school and joined the Kleinstein lab, I was learning R and programming as most do in RStudio. However, my life changed when soon after, Stefan, my best mate, convinced me to give emacs a whirl for R programming.&lt;/p&gt;
+
+&lt;p&gt;Since then, I&amp;rsquo;ve come to appreciate all the more my decision to program the emacs way. The reasons I&amp;rsquo;ve stuck with it are numerous, but the most important are:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;em&gt;Flexibility&lt;/em&gt; - emacs has its own shell environment that allows me to simultaneously program in R interactively (via ESS), and switch between the two with ease. This is great for bioinformatics where all too often you need both commandline tools for processing to work in concert with custom analysis scripts&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;Fast&lt;/em&gt; - the fastest way to get around a coding document is via emacs&amp;rsquo; advanced motion controls; while some IDEs like RStudio allow for emacs keybindings, all too often its incomplete or neutered. Plus, I find running/sending code in emacs to ESS is much faster to do (muscle memory helps too)&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;Customizable&lt;/em&gt; - you can make emacs truly yours in a way no other IDE allows. While I don&amp;rsquo;t go too crazy with this, some customizations are indispensible&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;On this last point, I wanted to post my current &lt;code&gt;.emacs&lt;/code&gt; file to show off some of my customizations (a lot of which is thanks to Stefan). The full &lt;code&gt;.emacs&lt;/code&gt; is posted below, and I&amp;rsquo;ll highlight some of my favorites:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;em&gt;Package repo MELPA&lt;/em&gt; - indispensible for extra useful package&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;Auto-complete in ESS&lt;/em&gt; - makes the terminal feel more like a traditional, GUI IDE&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;Poly-mode&lt;/em&gt; - essential for literate programming, here for Rmarkdown &lt;code&gt;.Rmd&lt;/code&gt; files&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;Disable smart underscore/insert underscore with _&lt;/em&gt; - I hate the default smart underscore because I use a lot of underscore in my variable names, so I turn this off by default and instead insert arrows &lt;code&gt;&amp;lt;-&lt;/code&gt; with &lt;code&gt;M--&lt;/code&gt; (meta + dash)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;My &lt;code&gt;.emacs&lt;/code&gt; is fairly vanilla, but I can&amp;rsquo;t imagine programming without these small customizations.&lt;/p&gt;
+
+&lt;p&gt;And while vim certainly has its pluses (its everywhere by default!), emacs will always be my number one.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;;; Package Repositories --------------------------------------------------------
+(package-initialize)
+(setq package-archives
+      &#39;((&amp;quot;melpa&amp;quot; . &amp;quot;http://melpa.milkbox.net/packages/&amp;quot;)))
+
+;; Auto-complete in ESS -------------------------------------------------------
+
+(defun my-auto-hook ()
+  (auto-complete-mode 1)
+  ;; Colors
+  (set-face-attribute &#39;popup-tip-face nil :background &amp;quot;#bfbaac&amp;quot; :foreground &amp;quot;black&amp;quot;)
+  (define-key ac-completing-map [return] nil)
+  (define-key ac-completing-map &amp;quot;\r&amp;quot; nil)
+  )
+(add-hook &#39;ess-mode-hook &#39;my-auto-hook)
+(add-hook &#39;inferior-ess-mode-hook &#39;my-auto-hook)
+
+(ac-config-default)
+(setq ess-use-auto-complete t)
+
+;; Poly-mode in Emacs --------------------------------------------------------
+
+(defun rmd-mode ()
+  &amp;quot;ESS Markdown mode for rmd files&amp;quot;
+  (interactive)
+  ;; (setq load-path
+  ;; 	(append (list &amp;quot;path/to/polymode/&amp;quot; &amp;quot;path/to/polymode/modes/&amp;quot;)
+  ;; 		load-path))
+  (require &#39;poly-R)
+  (require &#39;poly-markdown)
+    (poly-markdown+r-mode))
+
+;; MISC ------------------------------------------------------------------
+
+;; Stefan Avey (stefan.avey@yale.edu) - &amp;quot;smart&amp;quot; underscore
+(global-set-key (kbd &amp;quot;M--&amp;quot;)  (lambda () (interactive) (insert &amp;quot; &amp;lt;- &amp;quot;)))
+
+;; Turn off &amp;quot;smart underscore&amp;quot; ess feature
+;; (with-eval-after-load &#39;ess (setq ess-toggle-underscore nil))
+;;;; Map C-= to the assignment operator, and leaves _ alone:
+(add-hook &#39;ess-mode-hook
+	  (lambda ()
+	    ;;        (setq ess-S-assign-key (kbd &amp;quot;C-=&amp;quot;))
+	    ;;        (ess-toggle-S-assign-key t)     ; enable above key definition
+	    (ess-toggle-underscore nil)
+	    (ess-toggle-underscore nil)))   ; leave my underscore key alone!
+
+(add-hook &#39;inferior-ess-mode-hook
+	  (lambda ()
+	    (ess-toggle-underscore nil)
+	    ;;        (setq ess-S-assign-key (kbd &amp;quot;C-=&amp;quot;))
+	    ;;        (ess-toggle-S-assign-key t)     ; enable above key definition
+	    (ess-toggle-underscore nil)
+	    (ess-toggle-underscore nil)))   ; leave my underscore key alone!
+
+;; Skip splash screen
+(setq inhibit-splash-screen t
+      initial-scratch-message nil
+      initial-major-mode &#39;org-mode)
+
+;; ess r package mode disable
+;; C-c C-t C-s
+(setq ess-r-package-auto-activate nil)
+
+;; Emacs backup files
+(setq make-backup-files nil)
+
+;; Backup file management
+(setq backup-directory-alist `((&amp;quot;.*&amp;quot; . ,temporary-file-directory)))
+(setq auto-save-file-name-transforms `((&amp;quot;.*&amp;quot; ,temporary-file-directory t)))
+
+;; Default yes and no settings
+(defalias &#39;yes-or-no-p &#39;y-or-n-p)
+
+;; Turn off menu and tool bar
+(if (fboundp &#39;tool-bar-mode) (tool-bar-mode -1))
+(if (fboundp &#39;menu-bar-mode) (menu-bar-mode -1))
+
+
+;; set custom theme that doesn&#39;t override background transparency
+(add-to-list &#39;custom-theme-load-path &amp;quot;~/.emacs.d/themes/&amp;quot;) 
+(load-theme &#39;wombat-mod&#39; t)  ;; the t is a &amp;quot;no confirm&amp;quot; flag
+;; load wombat theme
+;; (load-theme &#39;wombat t)
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Munging Contiguous Data to Wide Format</title>
@@ -15,12 +1357,7 @@
       <pubDate>Thu, 06 Apr 2017 00:00:00 +0000</pubDate>
       
       <guid>http://robertamezquita.github.io/post/2017-04-06-munging-contiguous-data-to-wide-format/</guid>
-      <description>&lt;!-- BLOGDOWN-HEAD --&gt;
-&lt;!-- /BLOGDOWN-HEAD --&gt;
-
-&lt;!-- BLOGDOWN-BODY-BEFORE --&gt;
-&lt;!-- /BLOGDOWN-BODY-BEFORE --&gt;
-&lt;p&gt;Here I just wanted to take a quick second to share a small code snippet that illustrates munging a contiguous dataset to a wide format.&lt;/p&gt;
+      <description>&lt;p&gt;Here I just wanted to take a quick second to share a small code snippet that illustrates munging a contiguous dataset to a wide format.&lt;/p&gt;
 &lt;p&gt;What do I mean by that? Consider the following example: let’s say we have a dataset where we have patients A, B, and C, and we take two tissues from each patient - one of Serum and one of TIF (tumor interstitial fluid), and from each tissue assay a whole host of metabolites, each with its own column. If we want to take the log2 fold-change of Serum vs. TIF for each patient, its tricky to do in Excel when the data is spread out contiguously, across rows.&lt;/p&gt;
 &lt;p&gt;So how can we tackle this sort of problem in R? Making use of the &lt;code&gt;tidyverse&lt;/code&gt;, the key here is to first gather the metabolites, such that we have a new column named &lt;code&gt;metabolite&lt;/code&gt; describing what is being assayed, and a &lt;code&gt;value&lt;/code&gt; column with the readout.&lt;/p&gt;
 &lt;p&gt;Now, after this we still have our tissue (specimen type) being Serum vs. TIF. If we want to easily compare the two, it’s easier to &lt;code&gt;spread&lt;/code&gt; these values out across columns, such that we have one row per patient, with two columns, &lt;code&gt;Serum&lt;/code&gt; and &lt;code&gt;TIF&lt;/code&gt;, deriving their values from our freshly created &lt;code&gt;value&lt;/code&gt; column, with &lt;code&gt;metabolite&lt;/code&gt; still describing each assay.&lt;/p&gt;
