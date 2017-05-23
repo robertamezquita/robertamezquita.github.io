@@ -2,7 +2,12 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>http://robertamezquita.github.io/post/recovering-r-packages-automagically/</loc>
+    <loc>http://robertamezquita.github.io/post/2017-05-23-using-map-with-generic-functions-like-t-test/</loc>
+    <lastmod>2017-05-23T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://robertamezquita.github.io/post/2017-05-16-recovering-r-packages-automagically/</loc>
     <lastmod>2017-05-16T00:00:00+00:00</lastmod>
   </url>
   
@@ -53,14 +58,37 @@
   </url>
   
   <url>
+    <loc>http://robertamezquita.github.io/categories/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://robertamezquita.github.io/categories/emacs/</loc>
+    <lastmod>2017-04-07T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>http://robertamezquita.github.io/post/</loc>
-    <lastmod>2017-05-16T00:00:00+00:00</lastmod>
+    <lastmod>2017-05-23T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>http://robertamezquita.github.io/</loc>
-    <lastmod>2017-05-16T00:00:00+00:00</lastmod>
+    <lastmod>2017-05-23T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://robertamezquita.github.io/categories/random/</loc>
+    <lastmod>2017-04-08T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://robertamezquita.github.io/categories/rstats/</loc>
+    <lastmod>2017-05-23T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   

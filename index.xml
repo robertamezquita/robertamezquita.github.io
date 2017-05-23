@@ -6,15 +6,148 @@
     <description>Recent content on R.Amezquita</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 16 May 2017 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Tue, 23 May 2017 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://robertamezquita.github.io/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
+      <title>Using `map` with Generic Functions Like `t-test`</title>
+      <link>http://robertamezquita.github.io/post/2017-05-23-using-map-with-generic-functions-like-t-test/</link>
+      <pubDate>Tue, 23 May 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://robertamezquita.github.io/post/2017-05-23-using-map-with-generic-functions-like-t-test/</guid>
+      <description>&lt;p&gt;Tibbles are beautiful constructs that allow for a new column type, list columns, to exist, capturing bundles of (untidy) data into the structure of a data frame. They are especially great for when you want to do cool things like apply a function to multiple datasets (kept in the aforementioned list column), and generate a new column of (say, tidier) data.&lt;/p&gt;
+&lt;p&gt;One application might be if you want to do a quick t-test for various datasets, possibly even varying the contrasts at each iteration. This came up in a code question during lab, and as I explored this problem, the limitations of the &lt;code&gt;stats::t.test&lt;/code&gt; and friends functions, and even tibbles, started to become very intriguing.&lt;/p&gt;
+&lt;div id=&#34;example-of-list-columns&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;Example of List Columns&lt;/h2&gt;
+&lt;p&gt;As I said before, list columns in the new &lt;code&gt;tbl_df&lt;/code&gt; class of object are really great for keeping unstructured data encapsulated in a structured format. For example:&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(tidyverse)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Loading tidyverse: ggplot2
+## Loading tidyverse: tibble
+## Loading tidyverse: tidyr
+## Loading tidyverse: readr
+## Loading tidyverse: purrr
+## Loading tidyverse: dplyr&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Conflicts with tidy packages ----------------------------------------------&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## filter(): dplyr, stats
+## lag():    dplyr, stats&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## Example Data
+data &amp;lt;- list(ex1 = tibble(group = c(rep(&amp;quot;A&amp;quot;, 100), rep(&amp;quot;B&amp;quot;, 100)),
+                          obs = rnorm(200)),
+             ex2 = tibble(group = c(rep(&amp;quot;A&amp;quot;, 50), rep(&amp;quot;B&amp;quot;, 50)),
+                          obs = rnorm(100)),
+             ex3 = tibble(group = c(rep(&amp;quot;A&amp;quot;, 25), rep(&amp;quot;B&amp;quot;, 25)),
+                          obs = rnorm(50),
+                          some_var = rep(&amp;quot;blah&amp;quot;, 50))) %&amp;gt;%
+    enframe(value = &amp;quot;data&amp;quot;)
+
+data&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 3 x 2
+##    name               data
+##   &amp;lt;chr&amp;gt;             &amp;lt;list&amp;gt;
+## 1   ex1 &amp;lt;tibble [200 x 2]&amp;gt;
+## 2   ex2 &amp;lt;tibble [100 x 2]&amp;gt;
+## 3   ex3  &amp;lt;tibble [50 x 3]&amp;gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;What’s really great is that as you can see, the contents of the &lt;code&gt;data&lt;/code&gt; column can vary, with different numbers of rows or columns, and this list column could individual lists, as we’ll see in a bit, or even S3/S4 class objects.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;order-matters-when-we-use-a-generic-function-like-t.test&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;Order matters when we use a generic function like &lt;code&gt;t.test&lt;/code&gt;&lt;/h2&gt;
+&lt;p&gt;So let’s say we want to compare group A vs group B in each of our datasets. If we want to do a single comparison, given how we have the data structured (with a column, &lt;code&gt;group&lt;/code&gt;, and the observations in &lt;code&gt;obs&lt;/code&gt;), we could run &lt;code&gt;t.test&lt;/code&gt; using the &lt;code&gt;t.test(formula, data)&lt;/code&gt; specification.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;test &amp;lt;- t.test(formula = formula(&amp;quot;obs ~ group&amp;quot;), data = data$data[[1]]) # works
+test&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## 
+##  Welch Two Sample t-test
+## 
+## data:  obs by group
+## t = 2, df = 200, p-value = 0.04
+## alternative hypothesis: true difference in means is not equal to 0
+## 95 percent confidence interval:
+##  0.00813 0.53963
+## sample estimates:
+## mean in group A mean in group B 
+##          0.0856         -0.1882&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now, the key thing to note is that &lt;code&gt;t.test&lt;/code&gt; is what’s known as a &lt;em&gt;generic function&lt;/em&gt;, a class of function which is used for object-oriented style programming. What This means in practical terms is that we have two different methods (versions) of &lt;code&gt;t.test&lt;/code&gt; - the one we just used, &lt;code&gt;stats:::t.test.formula&lt;/code&gt;, and &lt;code&gt;stats:::t.test.default&lt;/code&gt;. How does R determine which one to use? It depends on the &lt;em&gt;first&lt;/em&gt; argument’s class, which is passed to the R function &lt;code&gt;UseMethod&lt;/code&gt;, which checks if the &lt;em&gt;first&lt;/em&gt; argument is a vector, thus calling &lt;code&gt;stats:::t.test.default&lt;/code&gt;, or if it is a formula, in which case it uses &lt;code&gt;stats:::t.test.formula&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;And that’s why, below, we see that order matters!&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## Issue 1: Formula must be first if using that parametrization
+t.test(data = data$data[[1]], formula = formula(&amp;quot;obs ~ group&amp;quot;)) # barfs&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Error in t.test.default(data = data$data[[1]], formula = formula(&amp;quot;obs ~ group&amp;quot;)): argument &amp;quot;x&amp;quot; is missing, with no default&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;So, if we wanted to use this in our tidy format, and employ &lt;code&gt;mutate&lt;/code&gt; and &lt;code&gt;map&lt;/code&gt; to run &lt;code&gt;t.test&lt;/code&gt; across each of our datasets kept in the list column form, it wouldn’t work, even though we supply named arguments to &lt;code&gt;map&lt;/code&gt;, as we did above!&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## This version barfs, due to formulas the wrong method being used
+## (also can&amp;#39;t have a single value in pmap/map)
+data %&amp;gt;%
+    mutate(t_test = map(list(data = data), t.test,
+                         formula = formula(&amp;quot;obs ~ group&amp;quot;)))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Warning in mean.default(x): argument is not numeric or logical: returning
+## NA&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Error in mutate_impl(.data, dots): is.atomic(x) is not TRUE&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;How can we get around this?&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;solution-1-use-a-custom-function&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;Solution 1: Use a custom function&lt;/h2&gt;
+&lt;p&gt;In some cases, one easy workaround is simply to make a custom function that interprets arguments and passes them into another function, essentially acting as a wrapper. This was the first solution I thought of to bypass the issue above:&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## A custom function works to make formula as a variable
+.t_test &amp;lt;- function(formula, data, ...) {
+    t.test(formula(formula), data = data, ...)
+}
+
+data %&amp;gt;%
+    mutate(formula = &amp;quot;obs ~ group&amp;quot;,
+           t_test = map2(formula, data, .t_test)) &lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 3 x 4
+##    name               data     formula      t_test
+##   &amp;lt;chr&amp;gt;             &amp;lt;list&amp;gt;       &amp;lt;chr&amp;gt;      &amp;lt;list&amp;gt;
+## 1   ex1 &amp;lt;tibble [200 x 2]&amp;gt; obs ~ group &amp;lt;S3: htest&amp;gt;
+## 2   ex2 &amp;lt;tibble [100 x 2]&amp;gt; obs ~ group &amp;lt;S3: htest&amp;gt;
+## 3   ex3  &amp;lt;tibble [50 x 3]&amp;gt; obs ~ group &amp;lt;S3: htest&amp;gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;data&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 3 x 2
+##    name               data
+##   &amp;lt;chr&amp;gt;             &amp;lt;list&amp;gt;
+## 1   ex1 &amp;lt;tibble [200 x 2]&amp;gt;
+## 2   ex2 &amp;lt;tibble [100 x 2]&amp;gt;
+## 3   ex3  &amp;lt;tibble [50 x 3]&amp;gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;And voila, we can even encode our formula as its own column, &lt;code&gt;formula&lt;/code&gt;, and can thus vary this dynamically if we wanted to for each individual dataset.&lt;/p&gt;
+&lt;p&gt;But, that’s somewhat more code…so, how can we get this code to work?&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;solution-2-call-the-t.test.formula-method-directly&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;Solution 2: Call the &lt;code&gt;t.test.formula&lt;/code&gt; method directly&lt;/h2&gt;
+&lt;p&gt;In looking to explain the &lt;code&gt;t.test&lt;/code&gt; function, if we just go and look at the &lt;a href=&#34;https://github.com/SurajGupta/r-source/blob/master/src/library/stats/R/t.test.R&#34;&gt;t.test source code&lt;/a&gt;, we see that the source is structured as:&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;t.test &amp;lt;- function(x, ...) UseMethod(&amp;quot;t.test&amp;quot;)
+
+t.test.default &amp;lt;- function(...) {
+    ## code for t.test.default, using x/y vector args
+}
+t.test.formula &amp;lt;- function(...) {
+    ## code for t.test.formula, using formula/data args
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The first line is encoding the &lt;em&gt;generic function&lt;/em&gt; for &lt;code&gt;t.test&lt;/code&gt;, and the &lt;code&gt;UseMethod&lt;/code&gt; call tests for the class of the first arg, vector (default) vs. formula (formula), using the corresponding method/version of the function.&lt;/p&gt;
+&lt;p&gt;So we saw that the order of the arguments matters above, but we can bypass this check by simply calling the correct method directly! To do that, we need to access the methods functions directly. Usually, they are hidden from the user (e.g., not exported by the &lt;code&gt;stats&lt;/code&gt; package), but we can access these hidden functions by using the triple-colon &lt;code&gt;:::&lt;/code&gt; to get inside the &lt;code&gt;stats&lt;/code&gt; package namespace.&lt;/p&gt;
+&lt;p&gt;By using &lt;code&gt;stats:::t.test.formula&lt;/code&gt;, we bypass the argument checker, and can provide arguments in whatever order we want, and thus do the correct &lt;code&gt;t.test&lt;/code&gt; method and apply our &lt;code&gt;map&lt;/code&gt; call correctly!&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## Both version works
+data %&amp;gt;%
+    mutate(t_test = map(data, stats:::t.test.formula,
+                        formula = formula(&amp;quot;obs ~ group&amp;quot;)))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;data %&amp;gt;%
+    mutate(t_test = pmap(list(data = data), stats:::t.test.formula,
+                        formula = formula(&amp;quot;obs ~ group&amp;quot;)))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 3 x 3
+##    name               data      t_test
+##   &amp;lt;chr&amp;gt;             &amp;lt;list&amp;gt;      &amp;lt;list&amp;gt;
+## 1   ex1 &amp;lt;tibble [200 x 2]&amp;gt; &amp;lt;S3: htest&amp;gt;
+## 2   ex2 &amp;lt;tibble [100 x 2]&amp;gt; &amp;lt;S3: htest&amp;gt;
+## 3   ex3  &amp;lt;tibble [50 x 3]&amp;gt; &amp;lt;S3: htest&amp;gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Boom! We have a new list column with the S3 of class &lt;code&gt;htest&lt;/code&gt;, the summary return by a working &lt;code&gt;t.test&lt;/code&gt; call.&lt;/p&gt;
+&lt;p&gt;This was a little bit of a trickster to solve, but was an interesting example for me of how generic functions operate. S3 methods are not as popular anymore compared to their newer, shinier S4 cousins, but gives us some insight into the object-oriented (OO) system that lays dormant in R, particularly in &lt;code&gt;stats&lt;/code&gt; and related packages.&lt;/p&gt;
+&lt;p&gt;For more about generic functions and object-oriented programming in R, check out the Advanced R chapter on &lt;a href=&#34;http://adv-r.had.co.nz/Functions.html&#34;&gt;functions&lt;/a&gt;, &lt;a href=&#34;http://adv-r.had.co.nz/S3.html&#34;&gt;S3&lt;/a&gt;, and &lt;a href=&#34;http://adv-r.had.co.nz/OO-essentials.html&#34;&gt;OO&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+</description>
+    </item>
+    
+    <item>
       <title>Recovering R Packages Automagically</title>
-      <link>http://robertamezquita.github.io/post/recovering-r-packages-automagically/</link>
+      <link>http://robertamezquita.github.io/post/2017-05-16-recovering-r-packages-automagically/</link>
       <pubDate>Tue, 16 May 2017 00:00:00 +0000</pubDate>
       
-      <guid>http://robertamezquita.github.io/post/recovering-r-packages-automagically/</guid>
+      <guid>http://robertamezquita.github.io/post/2017-05-16-recovering-r-packages-automagically/</guid>
       <description>&lt;p&gt;In the process of working on a new R package, one of the TODO’s on my list was testing it on a new version of R. However, upgrading R is a somewhat dreaded process, as this involves (re)installing all your old packages. While solutions like &lt;a href=&#34;https://rstudio.github.io/packrat/&#34;&gt;packrat&lt;/a&gt; deal with R package dependencies, this doesn’t seem to work for R upgrades. Another solution involves simply copying the R package library into the new R version’s package library, but this introduces the issue of potential breakage.&lt;/p&gt;
 &lt;!--more--&gt;
 &lt;p&gt;After some searching, I found multiple solutions that involve &lt;a href=&#34;https://hlplab.wordpress.com/2012/06/01/transferring-installed-packages-between-different-installations-of-r/&#34;&gt;transferring&lt;/a&gt; &lt;a href=&#34;http://stackoverflow.com/questions/7133394/migrating-r-libraries&#34;&gt;installed&lt;/a&gt; &lt;a href=&#34;http://www.schulte-mecklenbeck.com/2011/04/resinstalling-packages-in-r-after-update/&#34;&gt;packages&lt;/a&gt;, all doing the same basic process:&lt;/p&gt;
@@ -111,7 +244,7 @@ wide_data &amp;lt;- tribble(
     gather(variable, value, -id)
 
 long_data&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;## # A tibble: 6 × 3
+&lt;pre&gt;&lt;code&gt;## # A tibble: 6 x 3
 ##      id variable value
 ##   &amp;lt;chr&amp;gt;    &amp;lt;chr&amp;gt; &amp;lt;dbl&amp;gt;
 ## 1     A   height    10
@@ -127,7 +260,7 @@ long_data&lt;/code&gt;&lt;/pre&gt;
     mutate(average = round(average, digits = 2))
 
 summary&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;## # A tibble: 2 × 2
+&lt;pre&gt;&lt;code&gt;## # A tibble: 2 x 2
 ##   variable average
 ##      &amp;lt;chr&amp;gt;   &amp;lt;dbl&amp;gt;
 ## 1   height    7.33
@@ -161,18 +294,18 @@ summary&lt;/code&gt;&lt;/pre&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;dat &amp;lt;- raw %&amp;gt;%
     gather(variable, value, -qb)
 dat&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;## # A tibble: 150,672 × 3
+&lt;pre&gt;&lt;code&gt;## # A tibble: 150,672 x 3
 ##                  qb variable value
 ##               &amp;lt;chr&amp;gt;    &amp;lt;chr&amp;gt; &amp;lt;chr&amp;gt;
-## 1         Matt Ryan      att    34
-## 2    Jameis Winston      att    37
-## 3      Mike Glennon      att    11
-## 4  Matthew Stafford      att    36
-## 5      Sam Bradford      att    40
-## 6      Carson Wentz      att    47
-## 7       Eli Manning      att    36
-## 8  Ryan Fitzpatrick      att    27
-## 9       Bryce Petty      att     2
+##  1        Matt Ryan      att    34
+##  2   Jameis Winston      att    37
+##  3     Mike Glennon      att    11
+##  4 Matthew Stafford      att    36
+##  5     Sam Bradford      att    40
+##  6     Carson Wentz      att    47
+##  7      Eli Manning      att    36
+##  8 Ryan Fitzpatrick      att    27
+##  9      Bryce Petty      att     2
 ## 10   Ryan Tannehill      att    28
 ## # ... with 150,662 more rows&lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;Odd, we see that the value column is also a character! That’s not good. Let’s look at what’s causing that by trying to convert the value column to numeric, and seeing where it fails:&lt;/p&gt;
@@ -186,7 +319,7 @@ dat %&amp;gt;%
     filter(tmp$value %&amp;gt;% is.na) %&amp;gt;%
     select(value) %&amp;gt;% unique %&amp;gt;%
     print(n = 5)&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;## # A tibble: 98 × 1
+&lt;pre&gt;&lt;code&gt;## # A tibble: 98 x 1
 ##   value
 ##   &amp;lt;chr&amp;gt;
 ## 1  &amp;lt;NA&amp;gt;
@@ -213,18 +346,18 @@ dat &amp;lt;- dat %&amp;gt;%
     summarise(avg = mean(value, na.rm = TRUE),
               sd = sd(value, na.rm = TRUE)) %&amp;gt;%
     mutate_at(vars(-variable), round, digits = 2)&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;## # A tibble: 12 × 3
+&lt;pre&gt;&lt;code&gt;## # A tibble: 12 x 3
 ##      variable     avg     sd
 ##         &amp;lt;chr&amp;gt;   &amp;lt;dbl&amp;gt;  &amp;lt;dbl&amp;gt;
-## 1         att   26.87  13.62
-## 2         cmp   16.12   8.81
-## 3  GamePoints   21.42  10.67
-## 4         int    0.80   0.97
-## 5          lg   33.36  18.32
-## 6        loss   11.97  11.96
-## 7        rate   80.22  32.07
-## 8        sack    1.86   1.70
-## 9          td    1.12   1.12
+##  1        att   26.87  13.62
+##  2        cmp   16.12   8.81
+##  3 GamePoints   21.42  10.67
+##  4        int    0.80   0.97
+##  5         lg   33.36  18.32
+##  6       loss   11.97  11.96
+##  7       rate   80.22  32.07
+##  8       sack    1.86   1.70
+##  9         td    1.12   1.12
 ## 10        yds  186.23 105.90
 ## 11       year 2005.94   6.12
 ## 12        ypa    6.88   4.20&lt;/code&gt;&lt;/pre&gt;
@@ -325,7 +458,7 @@ glimpse(raw, width = 43)&lt;/code&gt;&lt;/pre&gt;
 raw %&amp;gt;%
     mutate(qb = map_chr(qb, .parse_qb)) %&amp;gt;% ## See note below
     select(qb) %&amp;gt;% head(3)&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;## # A tibble: 3 × 1
+&lt;pre&gt;&lt;code&gt;## # A tibble: 3 x 1
 ##                qb
 ##             &amp;lt;chr&amp;gt;
 ## 1      Ryan, Matt
@@ -1372,7 +1505,7 @@ dat &amp;lt;- tribble(
     &amp;#39;CR2&amp;#39;,         &amp;#39;TIF&amp;#39;,        5,         10,         4
 )
 dat&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;## # A tibble: 4 × 5
+&lt;pre&gt;&lt;code&gt;## # A tibble: 4 x 5
 ##   Patient.ID Tissue Glucose Pyruvate Glutamate
 ##        &amp;lt;chr&amp;gt;  &amp;lt;chr&amp;gt;   &amp;lt;dbl&amp;gt;    &amp;lt;dbl&amp;gt;     &amp;lt;dbl&amp;gt;
 ## 1        CR1  Serum       1        2         3
@@ -1394,7 +1527,7 @@ tidy_dat &amp;lt;- dat %&amp;gt;%
                   -Patient.ID, -Tissue) %&amp;gt;%
     spread(Tissue, value)
 tidy_dat&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;## # A tibble: 6 × 4
+&lt;pre&gt;&lt;code&gt;## # A tibble: 6 x 4
 ##   Patient.ID metabolite Serum   TIF
 ## *      &amp;lt;chr&amp;gt;      &amp;lt;chr&amp;gt; &amp;lt;dbl&amp;gt; &amp;lt;dbl&amp;gt;
 ## 1        CR1    Glucose     1     4
@@ -1414,7 +1547,7 @@ calc_dat &amp;lt;- tidy_dat %&amp;gt;%
                lfc_Serum_TIF = log2((Serum + pc) / (TIF + pc))
            )
 calc_dat&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;## # A tibble: 6 × 5
+&lt;pre&gt;&lt;code&gt;## # A tibble: 6 x 5
 ##   Patient.ID metabolite Serum   TIF lfc_Serum_TIF
 ##        &amp;lt;chr&amp;gt;      &amp;lt;chr&amp;gt; &amp;lt;dbl&amp;gt; &amp;lt;dbl&amp;gt;         &amp;lt;dbl&amp;gt;
 ## 1        CR1    Glucose     1     4        -1.989
@@ -1454,7 +1587,7 @@ hello_world &amp;lt;- frame_data(
 )
 
 hello_world&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;## # A tibble: 1 × 4
+&lt;pre&gt;&lt;code&gt;## # A tibble: 1 x 4
 ##   first second     third fourth
 ##   &amp;lt;chr&amp;gt;  &amp;lt;chr&amp;gt;     &amp;lt;chr&amp;gt;  &amp;lt;chr&amp;gt;
 ## 1   its      a beautiful    day&lt;/code&gt;&lt;/pre&gt;
